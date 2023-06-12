@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.optim as optim
 
 # 1. Full Model Training Process
-# Define a simple model
 class SimpleNN(nn.Module):
     def __init__(self):
         super(SimpleNN, self).__init__()
@@ -17,14 +16,11 @@ class SimpleNN(nn.Module):
         x = torch.sigmoid(self.fc3(x))
         return x
 
-# Initialize the model and optimizer
 model = SimpleNN()
 optimizer = optim.SGD(model.parameters(), lr=0.01)
 criterion = nn.BCELoss()
 
-# Train the model (we're just using random data for the example)
 for epoch in range(100):
-    # Training data
     inputs = torch.randn(32, 10)
     targets = torch.randint(2, (32, 1)).float()
     
@@ -33,14 +29,14 @@ for epoch in range(100):
     loss = criterion(outputs, targets)
     loss.backward()
     optimizer.step()
+    
+    if (epoch+1) % 10 == 0:
+        print(f'Epoch {epoch+1}/{100}, Loss: {loss.item()}')
 
 # 2. LoRA method applied to random subspaces of the model weights
-# Create a new optimizer that only includes the first layer weights
 optimizer_lora_random = optim.SGD([model.fc1.weight], lr=0.01)
 
-# Fine-tuning the model
 for epoch in range(50):
-    # Fine-tuning data
     inputs = torch.randn(32, 10)
     targets = torch.randint(2, (32, 1)).float()
     
@@ -49,13 +45,15 @@ for epoch in range(50):
     loss = criterion(outputs, targets)
     loss.backward()
     optimizer_lora_random.step()
+    
+    if (epoch+1) % 10 == 0:
+        print(f'Fine-tuning (random) Epoch {epoch+1}/{50}, Loss: {loss.item()}')
 
 # 3. LoRA method applied to strongly activated regions of the model weights
-# Define a mask for the first layer weights based on the activations
-activations = model.fc1(inputs).detach()
-mask = (activations > activations.mean()).float()
+# Define a mask for the first layer weights based on the weight magnitude
+with torch.no_grad():
+    mask = (model.fc1.weight > model.fc1.weight.mean()).float()
 
-# Apply the mask to the gradient during the update
 for epoch in range(50):
     inputs = torch.randn(32, 10)
     targets = torch.randint(2, (32, 1)).float()
@@ -67,4 +65,7 @@ for epoch in range(50):
     with torch.no_grad():
         model.fc1.weight.grad *= mask
     optimizer.step()
+    
+    if (epoch+1) % 10 == 0:
+        print(f'Fine-tuning (strong activation) Epoch {epoch+1}/{50}, Loss: {loss.item()}')
 
