@@ -8,10 +8,11 @@
 
 ################################
 
-import time, utils
+import time, utils, objects
 
 
-def make_workers
+def make_workers(N=1):
+    return [objects.Worker() for _ in range(N)]
 
 def do_LORA(workers, finetuning_corpus, model):
     # function to run the update 
